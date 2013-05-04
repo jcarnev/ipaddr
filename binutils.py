@@ -7,7 +7,7 @@ to this class.
 '''
 import re, bitstring
 
-class IpUtils(object):
+class BinUtils(object):
 	''' Mixin class containing basic conversion utilies that are not
 	specific to any addressing scheme. '''
 	
