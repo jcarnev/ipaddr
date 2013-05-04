@@ -5,7 +5,7 @@ binutils.py - Mixin class that provides basic utilities for the ipaddr library.
 Only utilities that are not specific to any addressing space should be added
 to this class.
 '''
-import re, bitstring
+#import re, bitstring
 
 class BinUtils(object):
 	''' Mixin class containing basic conversion utilies that are not
