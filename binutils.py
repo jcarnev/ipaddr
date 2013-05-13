@@ -49,5 +49,24 @@ class BinUtils(object):
 			return e
 
 
+	@staticmethod
+	def maskLen(bitMask, maxMaskLen=32):
+		''' Given a bitstring for a bitmask convert from bitstring to the 
+		decimal number representing the number of 1's in the mask. 
+
+		>>>>iputils.masklen('0b11110000', 8)
+		4
+		'''
+
+		decimalMaskLen = 0
+		try:
+			assert len(bitMask.lstrip('0b')) <= maxMaskLen
+		except AssertionError as e:
+			return e
+		tmpBitMask = int(bitMask.rstrip('0'), 2)
+		while tmpBitMask:
+			tmpBitMask >>= 1
+			decimalMaskLen += 1
+		return decimalMaskLen
 
 
