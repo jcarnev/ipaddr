@@ -92,6 +92,16 @@ def dec2Bin(octet):
                 return ''.join(bits)
 
 
+def bin2Dec(bitstr):
+        ''' Convert a binary string to decimal list that represents 4 octets '''
+
+        if isBinStr(bitstr):
+                n = 8
+                return [str(int(bitstr[i:n+i], 2)) for i in range(0, len(bitstr), n)]
+        else:
+                raise ValueError
+        
+                
 def dotDecimalToBinStr(prefix):
         ''' Given an ipv4 address in dotted decimal
         format; 192.168.1.1, convert to a binary
@@ -226,6 +236,15 @@ def isBogonAddr(prefix):
         '''
         pass
 
-                
+def printDotDec(prefix):
+        ''' Given an ipv4 address in hexidecimal, dotted decimal or binary string format,
+        print the IPv4 address to stdout in dotted decimal format. '''
+
+        if isDotDec(prefix):
+                return ('%s' % prefix)
+        prefix = convertAddr(prefix)
+        addr = bin2Dec(prefix)
+        return '.'.join(addr)
+
 
 
