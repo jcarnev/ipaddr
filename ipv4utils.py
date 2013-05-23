@@ -24,7 +24,7 @@ def isBinStr(prefix):
         binset = ['0', '1']
         if prefix[0:2] == '0b':
                 prefix = prefix[2:]
-        if (type(test) == str) & (len(prefix) == 32):
+        if (type(prefix) == str) & (len(prefix) == 32):
                 
                 for character in prefix:
                         if character not in binset:
@@ -38,8 +38,7 @@ def isBinStr(prefix):
         
 
 def isDotDec(prefix):
-        ''' Validate that prefix is a valid IPv4
-        address and in dotted decimal format;
+        ''' Validate that prefix is a valid IPv4 address and in dotted decimal format;
         return True/False
         '''
         maxOctets = 4
