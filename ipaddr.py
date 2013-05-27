@@ -1,8 +1,271 @@
 #!/usr/bin/env python
 
-import ipv4utils, binutils 
+import re
 
-class AddressSpace(object):
+# Mixim class
+
+class IPv4Utils():
+
+    '''collection of utilities for managing IPv4 addresses'''
+
+    @staticmethod
+    def isHexStr(prefix):
+        ''' Validate that an IPv4 prefix is in hexidecimal format; returns True/False '''
+        prefix = prefix.lower()
+        if prefix[0:2] == '0x':
+                prefix = prefix[2:]
+        hexset = {'a', 'b', 'c', 'd', 'e', 'f', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+        if (len(prefix)  == 8):
+                for character in prefix[2:]:
+                        if character not in hexset:
+                                return False
+                                break
+                else:
+                        return True
+                
+        else:
+                return False
+
+    @staticmethod
+    def isBinStr(prefix):
+            ''' Validate that a prefix is in binary string format. Returns True/False '''
+            
+            prefix = prefix.lower()
+            binset = ['0', '1']
+            if prefix[0:2] == '0b':
+                    prefix = prefix[2:]
+            if (type(prefix) == str) & (len(prefix) == 32):
+                    
+                    for character in prefix:
+                            if character not in binset:
+                                    return False
+                                    break
+                            else:
+                                    return True
+            else:
+                    return False
+                
+        
+    @staticmethod
+    def isDotDec(prefix):
+            ''' Validate that prefix is a valid IPv4 address and in dotted decimal format;
+            return True/False
+            '''
+            maxOctets = 4
+            octetsRead = 0
+
+            for value in prefix.split('.'):
+                    try:
+                            value = int(value)
+                    except ValueError:
+                            return False
+
+                    if octetsRead == 0:
+                            try:
+                                    assert 1 <= value <= 255, 'Prefix not a valid IPv4 dotted decimal address'
+                            except:
+                                    return False
+                    else:
+                            try:
+                                    assert 0 <= value <= 255, 'Prefix not a valid IPv4 dotted decimal address'
+                            except:
+                                    return False
+                    octetsRead += 1
+            else:
+                    if octetsRead > maxOctets:
+                            return False
+                    return True
+
+
+    @staticmethod
+    def _dec2Bin(octet):
+            ''' Convert a decimal single octet value to its
+            8 bit binary value.
+
+            _dec2Bin(128)
+            > '10000000'
+            '''
+            bits = []
+            bitPositionValues = [128, 64, 32, 16, 8, 4, 2, 1]
+
+            assert 0 <= octet <= 255
+
+            if octet == 0:
+                    return '00000000'
+            else:
+                    for value in bitPositionValues:
+                            if octet / value:
+                                    bits.append(str(1))
+                                    octet -= value
+                            else:
+                                    bits.append(str(0))
+                    return ''.join(bits)
+
+
+    @staticmethod
+    def _bin2Dec(bitstr):
+            ''' Convert a binary string to decimal list that represents 4 octets '''
+
+            if IPv4Utils.isBinStr(bitstr):
+                    n = 8
+                    return [str(int(bitstr[i:n+i], 2)) for i in range(0, len(bitstr), n)]
+            else:
+                    raise ValueError
+            
+                    
+    @staticmethod
+    def dotDecimalToBinStr(prefix):
+            ''' Given an ipv4 address in dotted decimal
+            format; 192.168.1.1, convert to a binary
+            string.
+
+            IdotDecimalToBinStr('192.168.1.1')
+            > '11000000101010000000000100000001'
+            '''
+
+            binaddr = []
+            if IPv4Utils.isDotDec(prefix):
+                    octets = [int(octet) for octet in prefix.split('.')]
+                    for octet in octets:
+                            binaddr.append(IPv4Utils._dec2Bin(octet))
+                    return ''.join(binaddr)
+            else:
+                    return None
+
+
+    @staticmethod
+    def hexToBinStr(prefix):
+            ''' Given an ipv4 address in hexidecimal format; 0xc0a80101,
+            convert it to a binary string.
+
+            HexToBinStr('0xc0a80101')
+            > '11000000101010000000000100000001'
+            '''
+            binaddr = []
+            if prefix[0:2] == '0x':
+                    prefix = prefix[2:]
+            if IPv4Utils.isHexStr(prefix):
+                    n = 2
+                    octets = [int(prefix[i:n+i], 16) for i in range(0, len(prefix), n)]
+                    for octet in octets:
+                            binaddr.append(_dec2Bin(octet))
+                    return ''.join(binaddr)
+            else:
+                    return None
+
+    @staticmethod
+    def convertAddr(prefix):
+            ''' using functions above, parse to determine if address is hexidecimal, dotted decimal,
+            or binary string; return binary format of address '''
+
+            if IPv4Utils.isDotDec(prefix):
+                    return IPv4Utils.dotDecimalToBinStr(prefix)
+            if IPv4Utils.isHexStr(prefix):
+                    return IPv4Utils.hexToBinStr(prefix)
+            if IPv4Utils.isBinStr(prefix):
+                    return prefix
+
+    
+    @staticmethod        
+    def isLoopback(prefix):
+            ''' Given an ipv4 address return True if the address is part of the
+            reserved loopback address space 127.0.0.0/8, return False if the
+            binary string is not part of the loopback address space. Supports
+            Dotted Decimal, Hexidecimal or Binary String as input.
+
+            011111110000000000000000000000000 -
+            011111111111111111111111111111111
+
+            isLoopback('0111111100000000
+            0000000000000001')
+            > True
+            '''
+            prefix = IPv4Utils.convertAddr(prefix)
+
+            # Loopback space is any 127.0.0.0 address
+            loopback = IPv4Utils._dec2Bin(127)
+
+            if prefix[0:8] == loopback:
+                    return True
+            else:
+                    return False
+            
+
+    @staticmethod
+    def isMcast(prefix):
+            ''' Given an ipv4 address in hexidecimal, dotted decimal or binary string format,
+            test to see if the first octet falls in the multicast address range 224 - 239;
+            return True/False.
+            '''
+
+            prefix = IPv4Utils.convertAddr(prefix)
+
+            firstOctet = prefix[0:8]
+            if int(firstOctet, 2) in range(224, 240):
+                    return True
+            else:
+                    return False
+
+
+    @staticmethod
+    def isPrivateAddr(prefix):
+            ''' Given an ipv4 address in hexidecimal, dotted decimal or binary string format,
+            test to see if the first octet falls in any of the RFC1918 address space.
+            192.168.0.0/16, 172.16.0.0 - 172.16.31.0/12 or 10.0.0.0/8.
+            '''
+
+            prefix = IPv4Utils.convertAddr(prefix)
+
+            # test for 10.0.0.0/8
+            if int(prefix[0:8], 2) == 10:
+                    return True
+
+            # test for 172.16.0.0 - 172.16.31.0/12
+            if (int(prefix[0:8], 2) == 172) & (int(prefix[8:16], 2) == 16) & (int(prefix[16:24], 2) in range(0, 17)):
+                    return True
+
+            # test for 192.168.0.0/16
+            if (int(prefix[0:8], 2) == 192) & (int(prefix[8:16], 2) == 168):
+                    return True
+
+            return False
+
+    @staticmethod
+    def isBogonAddr(prefix):
+            ''' Given an ipv4 address in hexidecimal, dotted decimal, or binary string format,
+            test to see if the address is one of the Bogon IP addresses:
+
+            0.0.0.0/8
+            10.0.0.0/8
+            100.64.0.0/10
+            127.0.0.0/8
+            169.254.0.0/16
+            172.16.0.0/12
+            192.0.0.0/24
+            192.0.2.0/24
+            192.168.0.0/16
+            198.18.0.0/15
+            198.51.100.0/24
+            203.0.113.0/24
+            224.0.0.0/4
+            240.0.0.0/4
+
+            Retrun True/False
+            '''
+            pass
+
+    @staticmethod
+    def printDotDec(prefix):
+            ''' Given an ipv4 address in hexidecimal, dotted decimal or binary string format,
+            print the IPv4 address to stdout in dotted decimal format. '''
+
+            if IPv4Utils.isDotDec(prefix):
+                    return ('%s' % prefix)
+            prefix = IPv4Utils.convertAddr(prefix)
+            addr = IPv4Utils._bin2Dec(prefix)
+            return '.'.join(addr)
+
+class AddressSpace(IPv4Utils, object):
 
     version = '0.1'
     
@@ -15,8 +278,9 @@ class AddressSpace(object):
 
     def __init__(self,  netAddr, netMask, AF_Family='IPv4'):
         self._AF_Family = AF_Family
-        self._netAddr = ipv4utils.dotDecimalToBinStr(netAddr)
-        self._netMask = ipv4utils.dotDecimalToBinStr(netMask)
+        self._netAddr = IPv4Utils.dotDecimalToBinStr(netAddr)
+        self._netMask = IPv4Utils.dotDecimalToBinStr(netMask)
+        self._value = int(self._netAddr, 2)
 
     # __str__(self):
     #     pass
@@ -28,19 +292,19 @@ class AddressSpace(object):
     def networkAddress(self):
         '''Displays the network address in dotted decimal Format'''
 
-        return ipv4utils.printDotDec(self._netAddr)
+        return IPv4Utils.printDotDec(self._netAddr)
 
     @property 
     def networkMask(self):
         '''Displays the network mask in dotted decimal format'''
 
-        return ipv4utils.printDotDec(self._netMask)
+        return IPv4Utils.printDotDec(self._netMask)
 
     @property 
     def inverseMask(self):
         '''Displays the inverse network mask in dotted decimal format'''
 
-        return ipv4utils.printDotDec(self.networkInverseMask)
+        return IPv4Utils.printDotDec(self.networkInverseMask)
 
     @property 
     def addressFamily(self):
@@ -87,7 +351,7 @@ class AddressSpace(object):
         1111111100000000 becomes 0000000011111111'''
 
         invMask = []
-        if ipv4utils.isBinStr(self._netMask):
+        if IPv4Utils.isBinStr(self._netMask):
             for value in self._netMask:
                 if value == '1':
                     invMask.append('0')
@@ -115,7 +379,7 @@ class AddressSpace(object):
         '''Calculate the Broadcast address from network address'''
         
         baseMask = '1' * 32
-        return ipv4utils.printDotDec(self._netAddr[0:self.maskLen] + baseMask[self.maskLen:])  
+        return IPv4Utils.printDotDec(self._netAddr[0:self.maskLen] + baseMask[self.maskLen:])  
             
     @property
     def addressFamily(self):
@@ -162,18 +426,31 @@ class AddressSpace(object):
     def inNetwork(self):
         pass
 
-    def __ge__:
+    def __ge__(self):
         pass
 
-    def __le__:
+    def __le__(self):
         pass
 
-    def __eq__:
+    def __eq__(self):
         pass
 
-    def __ne__:
+    def __ne__(self):
         pass
-        
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        value = self._value 
+        if value > (int(self._netAddr, 2)) + (int(self.inverseMask.lstrip('0.')) - 1):
+            raise StopIteration
+        self._value += 1
+        return IPv4Utils.printDotDec(value) 
+
+    def __len__(self):
+        int(self.inverseMask.lstrip('0.')) - 1
+
 
 class subnets(object):
 
