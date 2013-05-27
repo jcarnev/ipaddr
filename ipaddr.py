@@ -657,7 +657,19 @@ class AddressSpace(IPv4Utils, object):
             return True
         else:
             return False
+    # def allocateAs(self, newMask):
+    #     ''' Given a new network mask, allocate the address space into new subnets '''
+    #     if isDotDec(newMask):
+    #         if IPv4Utils.dotDec2Int(newMask) > IPv4Utils.dotDec2Int(self.networkMask):
+    #             raise ValueError, 'New Network Mask must be larger than existing network mask: %s' % (slef.networkMask)
+    #         maskDiff = IPv4Utils.dotDec2Int(newMsk) - IPv4Utils.dotDec2Int(self.networkMask)
+    #         maskDiff = 2 ** maskDiff 
 
+    #     if type(newMask) == int:
+    #         pass
+    #     else:
+    #         Raise ValueError, 'Invalid network mask'
+    
     def __iter__(self):
         return self
 
