@@ -5,30 +5,57 @@ import re
 # factory function to parse different IPv4 notations and return the appropriate class
 # object
 
-def ipv4Addr(*args):
+def _parseNotation(*args):
+    # match pattern for cidr notation, ex. 192.168.1.0/24
+    cidr = re.compile(r'((([0-9]){1,3}(\.)*){4})/([0-9]{1,2})')
+    # match pattern for address mask notation, ex. 192.168.1.0 255.255.255.0
+    addrMask = re.compile(r'((([0-9]){1,3}(\.)*){4}) ((([0-9]){1,3}(\.)*){4})')
+    # match pattern for hex network address and mask notation, ex. 0xC0A80100 0xFFFFFF00
+    hexAddrMask = re.compile(r'(0x)(([0-9A-Fa-f]){8}) (0x)(([0-9A-Fa-f]){8})')
+    
+    # identify which notation was used 
+    if cidr.match(args):
+        result = cidr.match(args)
+        return {addr = result.group(1), mask = IPv4Utils._cidrMask2DotDec(result.group(5))}
+    if addrMask.match(args):
+        result = addrMask.match(args)
+        return {addr = result.group(1), mask = result.group(5)}
+    if hexAddrMask.match(args):
+        result = hexAddrMask.match(args)
+        return {addr = result.group(2), mask = result.group(5)}
+
+
+
+def validateArgs(**kwargs):
+    
+    supportedAF = re.compile(r'ipv4')
+
+    # validate that correct keywords have been used
+
+    validArgs = ['addr', 'mask', 'af_family']
+
+    # parse arguments
+    if 1 <= len(kwargs) <= 3:
+        for keyword in kwargs.keys():
+            if keyword not in validArgs:
+                raise ValueError, 'only keywords: addr, mask, af_family supported in ipvAddr()'
+
+        if len(kwargs) == 3:
+            if not supportedAF.match(kwargs['af_family']):
+                raise ValueError, '%s is not a supported address family' % af_family
+            addr, mask = _parseNotation(kwargs['addr'].lower(), kwargs['mask'].lower())
+            af_family = kwargs['af_faimily'].lower()
+            # test to make sure address family is supported
+            
+            if not (IPv4Utils.isDotDec(addr) & (IPv4Utils.isDotDec(mask))):
+                raise ValueError, 'Invalid IPv4 IP address and/or Mask'
+
+def ipv4Addr(**kwargs):
     ''' This function accepts multiple input formats for IPv4 addressing and returns 
     a class object '''
 
-    if 1 <= len(args) <= 3:
-        if len(args) == 3:
-            for arg in args:
-                print arg
-        elif len(args) == 2:
-            if (args[0] != 'IPv4') & (args[1] != 'IPv4'):
-                AF_Family = 'IPv4'
-                print AF_Family
-                for arg in args:
-                    print arg
-        else:
-            AF_Family = 'IPv4'
-            print AF_Family
-            for arg in args:
-                    print arg
-    else: 
-        raise TypeError, '%d was given but only takes 3 arguments' % len(args)
+    pass
     
-
-
 # Mixin class
 
 class IPv4Utils():
@@ -181,6 +208,11 @@ class IPv4Utils():
                     return None
 
     @staticmethod
+    def hex2DotDec(prefix):
+        ''' given an address or mask in hex format, convert to dotted decimal format'''
+        pass
+        
+    @staticmethod
     def int2DotDec(prefix):
         ''' Given an IPv4 address as an unsigned int representation, convert it to dotted 
         decimal format.'''
@@ -197,6 +229,14 @@ class IPv4Utils():
         # convert to decimal 
         addr = IPv4Utils._bin2Dec(binary)
         return '.'.join(addr)
+
+    @staticmethod
+    def _cidrMask2DotDec(mask):
+        '''Given a mask length as an int, convert to the dotted decimal representation'''
+        tmpMask = '1' * maskLen
+        padding = 32 - maskLen 
+        result = tmpMask + ('0' * padding)
+        return result
 
     @staticmethod
     def dotDec2Int(prefix):
