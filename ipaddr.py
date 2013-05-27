@@ -5,6 +5,58 @@ import re
 # factory function to parse different IPv4 notations and return the appropriate class
 # object
 
+def __ge__(prefix1, prefix2):
+        ''' Return True if prefix 1 is larger than prefix 2'''
+        prefix1 = IPv4Utils.dotDec2Int(prefix1)
+        prefix2 = IPv4Utils.dotDec2Int(prefix2)
+        if prefix1 > prefix2:
+            return True
+        else:
+            return False
+
+def __le__(prefix1, prefix2):
+    ''' Return Truen if prefix 1 is less than prefix 2'''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    prefix2 = IPv4Utils.dotDec2Int(prefix2)
+    if prefix1 < prefix2:
+        return True
+    else:
+        return False
+
+def __eq__(prefix1, prefix2):
+    ''' Return True if prefix 1 and prefix 2 are equal'''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    prefix2 = IPv4Utils.dotDec2Int(prefix2)
+    if prefix1 == prefix2:
+        return True
+    else:
+        return False
+
+def __ne__(prefix1, prefix2):
+    ''' Return True if prefix 1 and prefix 2 are not equal'''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    prefix2 = IPv4Utils.dotDec2Int(prefix2)
+    if prefix1 != prefix2:
+        return True
+    else:
+        return False
+
+def __add__(prefix1, value):
+    ''' add value to the prefix to yield a new address '''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    value = int(value)
+    newValue = prefix1 + value
+    addr = IPv4Utils.int2DotDec(newValue)
+    return addr 
+
+def __sub__(prefix1, value):
+    ''' subtract value from prefix to yield a new address'''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    value = int(value)
+    newValue = prefix1 - value
+    addr = IPv4Utils.int2DotDec(newValue)
+    return addr 
+
 def _parseNotation(*args):
     # match pattern for cidr notation, ex. 192.168.1.0/24
     cidr = re.compile(r'((([0-9]){1,3}(\.)*){4})/([0-9]{1,2})')
@@ -551,6 +603,10 @@ class AddressSpace(IPv4Utils, object):
     def addressFamily(self):
         return self._AF_Family
 
+    @property 
+    def hostRange(self):
+        return '%s - %s' % (self.startHostAddr, self.endHostAddr)
+
     def _getNetData(self):
         ''' Retrieve properties of this address space and return the properties as a 
         dictionary for printing or data manipulation '''
@@ -590,18 +646,6 @@ class AddressSpace(IPv4Utils, object):
         return decimalMaskLen
 
     def inNetwork(self):
-        pass
-
-    def __ge__(self):
-        pass
-
-    def __le__(self):
-        pass
-
-    def __eq__(self):
-        pass
-
-    def __ne__(self):
         pass
 
     def __iter__(self):
