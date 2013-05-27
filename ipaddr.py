@@ -2,7 +2,34 @@
 
 import re
 
-# Mixim class
+# factory function to parse different IPv4 notations and return the appropriate class
+# object
+
+def ipv4Addr(*args):
+    ''' This function accepts multiple input formats for IPv4 addressing and returns 
+    a class object '''
+
+    if 1 <= len(args) <= 3:
+        if len(args) == 3:
+            for arg in args:
+                print arg
+        elif len(args) == 2:
+            if (args[0] != 'IPv4') & (args[1] != 'IPv4'):
+                AF_Family = 'IPv4'
+                print AF_Family
+                for arg in args:
+                    print arg
+        else:
+            AF_Family = 'IPv4'
+            print AF_Family
+            for arg in args:
+                    print arg
+    else: 
+        raise TypeError, '%d was given but only takes 3 arguments' % len(args)
+    
+
+
+# Mixin class
 
 class IPv4Utils():
 
@@ -154,6 +181,35 @@ class IPv4Utils():
                     return None
 
     @staticmethod
+    def int2DotDec(prefix):
+        ''' Given an IPv4 address as an unsigned int representation, convert it to dotted 
+        decimal format.'''
+
+        assert type(prefix) == int
+        binary = bin(prefix)
+        # strip off the leading 0b 
+        if binary[0:2] == '0b':
+            binary = binary[2:]
+        # binary conversion drops leading zeros, we need to add them back
+        if len(binary) < 32:
+            padding = 32 - len(binary)
+            binary = ('0' * padding) + binary 
+        # convert to decimal 
+        addr = IPv4Utils._bin2Dec(binary)
+        return '.'.join(addr)
+
+    @staticmethod
+    def dotDec2Int(prefix):
+        ''' Given an IPv4 inverse address mask, convert it to an unsigned int '''
+
+        bitstring = ''
+        for octet in prefix.split('.'):
+            octet = int(octet)
+            bits = IPv4Utils._dec2Bin(octet)
+            bitstring += bits
+        return int(bitstring, 2) 
+
+    @staticmethod
     def convertAddr(prefix):
             ''' using functions above, parse to determine if address is hexidecimal, dotted decimal,
             or binary string; return binary format of address '''
@@ -280,7 +336,7 @@ class AddressSpace(IPv4Utils, object):
         self._AF_Family = AF_Family
         self._netAddr = IPv4Utils.dotDecimalToBinStr(netAddr)
         self._netMask = IPv4Utils.dotDecimalToBinStr(netMask)
-        self._value = int(self._netAddr, 2)
+        self._hosts = int(self._netAddr, 2) + 1
 
     # __str__(self):
     #     pass
@@ -317,7 +373,25 @@ class AddressSpace(IPv4Utils, object):
     def allSubnetsAddr(self):
         '''Calulate the all subnets address using the network address
         and network mask '''
+
         return self.networkAddress
+
+    @property 
+    def startHostAddr(self):
+        '''Calculate and return the starting host IP address'''
+
+        addr = IPv4Utils.dotDec2Int(self.networkAddress)
+        addr += 1
+        return IPv4Utils.int2DotDec(addr)
+
+    @property
+    def endHostAddr(self):
+        ''' Calculate the last host address in the IP range '''
+
+        baseAddr = IPv4Utils.dotDec2Int(self.networkAddress)
+        inverse = IPv4Utils.dotDec2Int(self.inverseMask)
+        endAddress = (baseAddr -1) + inverse
+        return IPv4Utils.int2DotDec(endAddress) 
 
     @property
     def networkClass(self):
@@ -441,12 +515,15 @@ class AddressSpace(IPv4Utils, object):
     def __iter__(self):
         return self
 
+    def __getitem__(self):
+        pass
+
     def next(self):
-        value = self._value 
-        if value > (int(self._netAddr, 2)) + (int(self.inverseMask.lstrip('0.')) - 1):
+        value = self._hosts 
+        if value > (int(self._netAddr, 2)) + (IPv4Utils.dotDec2Int(self.inverseMask) -1):
             raise StopIteration
-        self._value += 1
-        return IPv4Utils.printDotDec(value) 
+        self._hosts += 1
+        return IPv4Utils.int2DotDec(value) 
 
     def __len__(self):
         int(self.inverseMask.lstrip('0.')) - 1
