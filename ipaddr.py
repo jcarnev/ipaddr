@@ -645,8 +645,18 @@ class AddressSpace(IPv4Utils, object):
             decimalMaskLen += 1
         return decimalMaskLen
 
-    def inNetwork(self):
-        pass
+    def inNetwork(self, prefix):
+        ''' given a prefix, return True if the prefix is part of the network and 
+        False if it is not ''' 
+        
+        prefix = IPv4Utils.dotDec2Int(prefix)
+        start = IPv4Utils.dotDec2Int(self.startHostAddr)
+        stop = IPv4Utils.dotDec2Int(self.endHostAddr)
+
+        if prefix in range(start, stop):
+            return True
+        else:
+            return False
 
     def __iter__(self):
         return self
