@@ -22,16 +22,32 @@ import re
 # object
 
 def __ge__(prefix1, prefix2):
-        ''' Return True if prefix 1 is larger than prefix 2'''
-        prefix1 = IPv4Utils.dotDec2Int(prefix1)
-        prefix2 = IPv4Utils.dotDec2Int(prefix2)
-        if prefix1 > prefix2:
-            return True
-        else:
-            return False
+    ''' 
+    Return True if prefix 1 is larger than prefix 2 or False if prefix 2 is larger
+
+    Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        prefix2: A dotted decimal IPv4 address as a string
+    Returns:
+        True/False
+    '''
+    prefix1 = IPv4Utils.dotDec2Int(prefix1)
+    prefix2 = IPv4Utils.dotDec2Int(prefix2)
+    if prefix1 > prefix2:
+        return True
+    else:
+        return False
 
 def __le__(prefix1, prefix2):
-    ''' Return Truen if prefix 1 is less than prefix 2'''
+    ''' 
+    Return True if prefix 1 is less than prefix 2 or False if prefix 2 smaller than prefix 1
+
+    Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        prefix2: A dotted decimal IPv4 address as a string
+    Returns:
+        True/False
+    '''
     prefix1 = IPv4Utils.dotDec2Int(prefix1)
     prefix2 = IPv4Utils.dotDec2Int(prefix2)
     if prefix1 < prefix2:
@@ -40,7 +56,15 @@ def __le__(prefix1, prefix2):
         return False
 
 def __eq__(prefix1, prefix2):
-    ''' Return True if prefix 1 and prefix 2 are equal'''
+    '''
+     Return True if prefix 1 and prefix 2 are equal
+
+     Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        prefix2: A dotted decimal IPv4 address as a string
+    Returns:
+        True/False
+    '''
     prefix1 = IPv4Utils.dotDec2Int(prefix1)
     prefix2 = IPv4Utils.dotDec2Int(prefix2)
     if prefix1 == prefix2:
@@ -49,7 +73,15 @@ def __eq__(prefix1, prefix2):
         return False
 
 def __ne__(prefix1, prefix2):
-    ''' Return True if prefix 1 and prefix 2 are not equal'''
+    ''' 
+    Return True if prefix 1 and prefix 2 are not equal, otherwise return False
+
+    Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        prefix2: A dotted decimal IPv4 address as a string
+    Returns:
+        True/False
+    '''
     prefix1 = IPv4Utils.dotDec2Int(prefix1)
     prefix2 = IPv4Utils.dotDec2Int(prefix2)
     if prefix1 != prefix2:
@@ -58,7 +90,15 @@ def __ne__(prefix1, prefix2):
         return False
 
 def __add__(prefix1, value):
-    ''' add value to the prefix to yield a new address '''
+    ''' 
+    add value to the prefix to yield a new address 
+
+    Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        value: integer value to add to prefix 1
+    Returns:
+        sum of prefix 1 and value 
+    '''
     prefix1 = IPv4Utils.dotDec2Int(prefix1)
     value = int(value)
     newValue = prefix1 + value
@@ -66,7 +106,15 @@ def __add__(prefix1, value):
     return addr 
 
 def __sub__(prefix1, value):
-    ''' subtract value from prefix to yield a new address'''
+    ''' 
+    subtract value from prefix to yield a new address
+
+    Args:
+        prefix1: A dotted decimal IPv4 address as a string
+        value: integer value to subtract from prefix 1
+    Returns:
+        differnce of prefix 1 and value 
+    '''
     prefix1 = IPv4Utils.dotDec2Int(prefix1)
     value = int(value)
     newValue = prefix1 - value
@@ -74,6 +122,20 @@ def __sub__(prefix1, value):
     return addr 
 
 def _parseNotation(*args):
+    '''
+    Parses IPv4 address and/or Mask to determine notation used and return the 
+    dotted decimal representation of the address and maskLen
+
+    Args:
+        *args: '192.168.1.0', '255.255.255.0' 
+               '192.168.1.0/24'
+               '0xC0A80100', '0xFFFFFF00'
+        Returns:
+                The dotted decimal representation of the address and mask as a 
+                dictionary 
+                {'addr' : 192.168.1.0', 'mask' : '255.255.255.0'}
+    '''
+
     # match pattern for cidr notation, ex. 192.168.1.0/24
     cidr = re.compile(r'((([0-9]){1,3}(\.)*){4})/([0-9]{1,2})')
     # match pattern for address mask notation, ex. 192.168.1.0 255.255.255.0
@@ -99,7 +161,18 @@ def _parseNotation(*args):
 
 
 
-def validateArgs(kwargs):
+def _validateArgs(kwargs):
+    '''
+    Parses arguments in ipv4Addr() and validates the number of arguments, keywords used 
+    are valid, extracts the arguments and verifies that the entries are dotted decimal or
+    hexidecimal. Calls _parseNotation() to validate the address and mask.
+
+    Args:
+        kwargs: addr='192.168.1.0', mask='255.255.255.0', af_family='ipv4'
+    returns 
+        A tuple containing the address, mask and af_family
+        ('192.168.1.0', '255.255.255.0', 'ipv4')
+    '''
     
     supportedAF = re.compile(r'ipv4')
 
@@ -155,21 +228,39 @@ def validateArgs(kwargs):
 
 
 def ipv4Addr(**kwargs):
-    ''' This function accepts multiple input formats for IPv4 addressing and returns 
-    a class object '''
+    ''' 
+    Factory function that accepts multiple IPv4 address/mask formats. Calls _validateArgs(), if the inputs
+    are valid; return class object initialized with the arguments given.
 
-    (addr, mask, af_family) = validateArgs(kwargs)
+    Args:
+        addr: An IPv4 Network address; addr='192.168.1.0'
+        mask: An IPv4 Network Mask; mask='255.255.255.0'
+        af_family: (optional) keyword designating the address space; currently only supports 'ipv4'
+                    af_family='ipv4'
+    Returns:
+        A Class Object initialized with the addr, mask and af_family. Calls AddressSpace()
+     '''
+
+    (addr, mask, af_family) = _validateArgs(kwargs)
     return AddressSpace(addr, mask, af_family)
     
 # Mixin class
 
 class IPv4Utils():
 
-    '''collection of utilities for managing IPv4 addresses'''
+    '''collection of staticmethod utilities for managing IPv4 addresses'''
 
     @staticmethod
     def isHexStr(prefix):
-        ''' Validate that an IPv4 prefix is in hexidecimal format; returns True/False '''
+        ''' 
+        Validate that an IPv4 prefix is in hexidecimal format
+
+        Args:
+            prefix: Hexidecimal representation of an IPv4 address as a string
+        Returns:
+            True/False 
+        '''
+        
         prefix = prefix.lower()
         if prefix[0:2] == '0x':
                 prefix = prefix[2:]
@@ -187,7 +278,14 @@ class IPv4Utils():
 
     @staticmethod
     def isBinStr(prefix):
-            ''' Validate that a prefix is in binary string format. Returns True/False '''
+            '''
+            Validate that a prefix is in binary string format
+
+            Args: 
+                prefix: bitstring representation of an IPv4 address as a string
+            Returns:
+                True/False 
+            '''
             
             prefix = prefix.lower()
             binset = ['0', '1']
@@ -207,8 +305,13 @@ class IPv4Utils():
         
     @staticmethod
     def isDotDec(prefix):
-            ''' Validate that prefix is a valid IPv4 address and in dotted decimal format;
-            return True/False
+            '''
+            Validate that prefix is a valid IPv4 address and in dotted decimal format
+
+            Args:
+                prefix: A dotted decimal representation of an IPv4 Address as a string; '192.168.1.0'
+            Returns:
+                True/False
             '''
             maxOctets = 4
             octetsRead = 0
@@ -238,11 +341,16 @@ class IPv4Utils():
 
     @staticmethod
     def _dec2Bin(octet):
-            ''' Convert a decimal single octet value to its
-            8 bit binary value.
+            '''
+            Convert a decimal single octet value to its 8 bit binary value.
 
             _dec2Bin(128)
             > '10000000'
+
+            Args: 
+                octet: an integer in the range 0 - 255 
+            Returns:
+                A bitstring representation of the integer as a string; '10000000'
             '''
             bits = []
             bitPositionValues = [128, 64, 32, 16, 8, 4, 2, 1]
@@ -263,7 +371,15 @@ class IPv4Utils():
 
     @staticmethod
     def _bin2Dec(bitstr):
-            ''' Convert a binary string to decimal list that represents 4 octets '''
+            '''
+            Convert a binary string into a list containing the 4 octets as strings
+
+            Args:
+                bitstr: A 32 value bitstring representing an IPv4 Address or Mask; '11000000101010000000000100000000'
+            Returns:
+                A list of strings, one for each octet of the address
+                ['192', '168', '1', '0']
+            '''
 
             if IPv4Utils.isBinStr(bitstr):
                     n = 8
@@ -274,12 +390,18 @@ class IPv4Utils():
                     
     @staticmethod
     def dotDecimalToBinStr(prefix):
-            ''' Given an ipv4 address in dotted decimal
-            format; 192.168.1.1, convert to a binary
-            string.
+            ''' Given an ipv4 address in dotted decimal format; 192.168.1.1, 
+            convert to a binary string.
 
-            IdotDecimalToBinStr('192.168.1.1')
+            dotDecimalToBinStr('192.168.1.1')
             > '11000000101010000000000100000001'
+
+            Args: 
+                prefix: An IPv4 Network Address in dotted decimal format as a string; '192.168.1.0'
+            Returns:
+                A 32 value bitstring representing the IPv4 address
+                '1100000010101000000000010000000'
+
             '''
 
             binaddr = []
@@ -299,7 +421,14 @@ class IPv4Utils():
 
             HexToBinStr('0xc0a80101')
             > '11000000101010000000000100000001'
+
+            Args: 
+                prefix: An IPv4 address in hexidecimal format; 0xC0A80100'
+            Returns:
+                A 32 bit value bitstring representing the IPv4 address as a string
+                '11000000101010000000000100000000'
             '''
+
             binaddr = []
             if prefix[0:2] == '0x':
                     prefix = prefix[2:]
@@ -371,7 +500,7 @@ class IPv4Utils():
 
     @staticmethod
     def convertAddr(prefix):
-            ''' using functions above, parse to determine if address is hexidecimal, dotted decimal,
+            '''Parse to determine if address is hexidecimal, dotted decimal,
             or binary string; return binary format of address '''
 
             if IPv4Utils.isDotDec(prefix):
@@ -598,6 +727,7 @@ class AddressSpace(IPv4Utils, object):
 
     @property 
     def maxPrefixLen(self):
+        '''Returns the largest network mask that can be used; generally 32'''
         return self._maxNetMaskLen
 
     @property 
@@ -617,10 +747,20 @@ class AddressSpace(IPv4Utils, object):
             
     @property
     def addressFamily(self):
+        '''Returns the address family for the address space used in AddressSpace() object'''
         return self._AF_Family
 
     @property 
     def hostRange(self):
+        '''
+        Returns the valid range of host addresses available in the network represented in AddressSpace() object
+
+        Args:
+            None
+        Returns:
+            Valide IPv4 Host range; 
+            '192.168.1.1 - 192.168.1.254'
+        '''
         return '%s - %s' % (self.startHostAddr, self.endHostAddr)
 
     def _getNetData(self):
